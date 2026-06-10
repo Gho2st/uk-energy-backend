@@ -23,7 +23,10 @@ app.get("/api/energy-mix", async (req, res) => {
   try {
     const { from, to } = getRange(3);
     const intervals = await fetchGBGenerationMix(from, to);
-    const days = computeDailyAverages(intervals);
+    // zakres pobiera - 3 doby wiec do danych wpada tez jeden interwal
+    // z polnocy 4 dnia, tworzac niepelna czwarta grupe
+    // .slice bierzemy wiec 3 pierwsze dni
+    const days = computeDailyAverages(intervals).slice(0, 3);
     res.json({ days });
   } catch (err) {
     res.status(502).json({ error: err.message });
@@ -50,5 +53,4 @@ app.get("/api/optimal-window", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Backend działa na http://localhost:${PORT}`);
-  console.log(`Podgląd surowych danych: http://localhost:${PORT}/api/raw`);
 });
