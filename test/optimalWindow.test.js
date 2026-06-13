@@ -55,4 +55,9 @@ describe("findOptimalWindow", () => {
     const res = findOptimalWindow(data, 1);
     expect(res.start).toBe("2024-06-09T01:00Z");
   });
+
+  it("rzuca błąd, gdy danych jest mniej niż długość okna", () => {
+    const data = [interval("2024-06-09T00:00Z", "2024-06-09T00:30Z", 50)];
+    expect(() => findOptimalWindow(data, 3)).toThrow();
+  });
 });

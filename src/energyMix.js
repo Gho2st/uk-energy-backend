@@ -1,29 +1,30 @@
-// zrodla uznawane za "czysta energie"
-
+// Źródła uznawane za "czystą energię"
 export const CLEAN_FUELS = ["biomass", "nuclear", "hydro", "wind", "solar"];
 
+// Grupuje półgodzinne interwały po dacie i liczy dla każdego dnia średni udział
+// każdego źródła oraz łączny procent czystej energii (suma średnich CLEAN_FUELS).
 export function computeDailyAverages(intervals) {
-  const szafka = new Map();
+  const byDate = new Map();
   for (const interval of intervals) {
-    const dzien = interval.from.slice(0, 10); // sama data
-    if (!szafka.has(dzien)) szafka.set(dzien, []);
-    szafka.get(dzien).push(interval);
+    const date = interval.from.slice(0, 10); // sama data, np. "2026-06-12"
+    if (!byDate.has(date)) byDate.set(date, []);
+    byDate.get(date).push(interval);
   }
 
-  const wynik = [];
-  for (const [date, dayIntervals] of szafka) {
-    const sumy = {};
-    const liczba = dayIntervals.length;
+  const result = [];
+  for (const [date, dayIntervals] of byDate) {
+    const sums = {};
+    const count = dayIntervals.length;
 
     for (const interval of dayIntervals) {
       for (const g of interval.generationmix) {
-        sumy[g.fuel] = (sumy[g.fuel] || 0) + g.perc;
+        sums[g.fuel] = (sums[g.fuel] || 0) + g.perc;
       }
     }
 
     const mix = {};
-    for (const fuel in sumy) {
-      mix[fuel] = sumy[fuel] / liczba;
+    for (const fuel in sums) {
+      mix[fuel] = sums[fuel] / count;
     }
 
     const cleanPercentage = CLEAN_FUELS.reduce(
@@ -31,9 +32,9 @@ export function computeDailyAverages(intervals) {
       0,
     );
 
-    wynik.push({ date, mix, cleanPercentage });
+    result.push({ date, mix, cleanPercentage });
   }
 
-  wynik.sort((a, b) => a.date.localeCompare(b.date));
-  return wynik;
+  result.sort((a, b) => a.date.localeCompare(b.date));
+  return result;
 }

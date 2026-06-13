@@ -1,38 +1,35 @@
-// klient do publicznego API carbon intensity
+// Klient do publicznego API Carbon Intensity (National Energy System Operator).
+//
+// Używamy krajowego endpointu /generation/{from}/{to}, który zwraca miks
+// energetyczny całej Wielkiej Brytanii w interwałach półgodzinnych — zarówno
+// dane bieżące, jak i prognozę na kolejne dni.
 
 const BASE_URL = "https://api.carbonintensity.org.uk";
 
-// format daty wymagany przez API: "2024-06-09T00:00Z"
-
+// Format daty wymagany przez API: "2024-06-09T00:00Z" (bez sekund, zakończone Z).
 export function toApiTime(date) {
-  return date.toISOString().slice(0, 16) + "Z"; // pierwsze 16 znakow + Z
+  return date.toISOString().slice(0, 16) + "Z";
 }
 
-// z surowej odpowiedzi (wszystkie regiony) zostawiamy GB i upraszczamy
-
-function extractGB(rawIntervals) {
-  return rawIntervals.map((interval) => {
-    const gb = interval.regions.find((r) => r.shortname === "GB");
-    if (!gb) {
-      throw new Error(`Brak regionu "GB" w interwale ${interval.from}`);
-    }
-    return {
-      from: interval.from, // np. "2024-06-09T00:00Z"
-      to: interval.to,
-      generationmix: gb.generationmix, // [{ fuel: "wind", perc: 12.3 }, ...]
-    };
-  });
-}
-
+/**
+ * Pobiera półgodzinne interwały miksu energetycznego GB w zadanym zakresie.
+ * @param {string} fromISO format API, np. "2024-06-09T00:00Z"
+ * @param {string} toISO   format API
+ * @returns {Promise<Array<{from: string, to: string, generationmix: Array<{fuel: string, perc: number}>}>>}
+ */
 export async function fetchGBGenerationMix(fromISO, toISO) {
-  const url = `${BASE_URL}/regional/intensity/${fromISO}/${toISO}`;
+  const url = `${BASE_URL}/generation/${fromISO}/${toISO}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
-    throw new Error(`Carbon Intensity API zwrocilo status ${res.status}`);
+    throw new Error(`Carbon Intensity API zwróciło status ${res.status}`);
   }
   const body = await res.json();
   if (!body.data || !Array.isArray(body.data)) {
-    throw new Error("Nieoczekiwany ksztalt odpowiedzi z API");
+    throw new Error("Nieoczekiwany kształt odpowiedzi z API");
   }
-  return extractGB(body.data);
+
+  // API zwraca też interwał obejmujący punkt startowy (np. wczoraj 23:30),
+  // czyli zaczynający się przed żądanym zakresem. Odrzucamy go tutaj, na
+  // granicy z API, żeby logika wyżej dostawała wyłącznie interwały z zakresu.
+  return body.data.filter((interval) => interval.from >= fromISO);
 }

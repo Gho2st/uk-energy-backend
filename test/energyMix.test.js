@@ -30,10 +30,10 @@ describe("computeDailyAverages", () => {
       },
     ];
 
-    const wynik = computeDailyAverages(intervals);
-    expect(wynik.length).toBe(2);
-    expect(wynik[0].date).toBe("2024-06-09");
-    expect(wynik[0].cleanPercentage).toBeCloseTo(50);
-    expect(wynik[1].cleanPercentage).toBeCloseTo(80);
+    const result = computeDailyAverages(intervals);
+    expect(result.length).toBe(2);
+    expect(result[0].date).toBe("2024-06-09");
+    expect(result[0].cleanPercentage).toBeCloseTo(50);
+    expect(result[1].cleanPercentage).toBeCloseTo(80);
   });
 });

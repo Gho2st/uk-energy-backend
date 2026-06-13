@@ -5,9 +5,12 @@ import { findOptimalWindow } from "./optimalWindow.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const ALLOWED_ORIGIN = process.env.FRONTEND_URL || "http://localhost:3001";
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*"); // CORS — frontend na innym porcie
+  // Wpuszczamy tylko skonfigurowany front (lokalnie localhost, na produkcji
+  // adres z Rendera). Adres podajemy zmienną FRONTEND_URL.
+  res.header("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
   next();
 });
 
@@ -23,10 +26,11 @@ app.get("/api/energy-mix", async (req, res) => {
   try {
     const { from, to } = getRange(3);
     const intervals = await fetchGBGenerationMix(from, to);
-    // zakres pobiera - 3 doby wiec do danych wpada tez jeden interwal
-    // z polnocy 4 dnia, tworzac niepelna czwarta grupe
-    // .slice bierzemy wiec 3 pierwsze dni
+
+    // slice(0, 3): bierzemy równo trzy dni (dzisiaj, jutro, pojutrze).
+    // Horyzont prognozy API to ~48h, więc trzeci dzień bywa częściowy.
     const days = computeDailyAverages(intervals).slice(0, 3);
+
     res.json({ days });
   } catch (err) {
     res.status(502).json({ error: err.message });
